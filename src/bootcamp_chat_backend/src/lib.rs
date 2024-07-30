@@ -1,31 +1,36 @@
-use std::{cell::{Ref, RefCell}, collections::HashMap};
+use std::{cell::RefCell, collections::HashMap};
 use candid::Principal;
 use ic_cdk::caller;
 
 thread_local! {
     static NOTES: RefCell<HashMap<Principal, Vec<String>>> = RefCell::default();
+    static CHAT: RefCell<HashMap<[Principal; 2], Vec<String>>> = RefCell::default();
 }
 
 #[ic_cdk::query]
-fn get_notes(user: Principal) -> Option<Vec<String>> {
-    NOTES.with_borrow(|notes| notes.get(&user).cloned())
+fn get_chat(chat_path: [Principal; 2]) -> Option<Vec<String>> {
+    CHAT.with_borrow(|chats| chats.get(&chat_path).cloned())
 }
 
 #[ic_cdk::update]
-fn add_note(note: String) {
-    let user: Principal = caller();
+fn add_chat_msg(msg: String, user2: Principal) {
+    let user1: Principal = caller();
 
-    if user == Principal::anonymous() {
+    if user1 == Principal::anonymous() {
         panic!("Anonymus principal!")
     }
 
-    NOTES.with_borrow_mut(|notes| {
-        let mut_notes = notes.get_mut(&user);
+    let mut principals = [user1, user2];
+    principals.sort();
 
-        if let Some(notes_vec) = mut_notes{
-            notes_vec.push(note)
+    CHAT.with_borrow_mut(|chats| {
+        let mut_chats = chats.get_mut(&principals);
+
+        if let Some(chats_msgs) = mut_chats{
+            chats_msgs.push(msg)
         } else {
-            notes.insert(user, vec![note]);
+            chats.insert(principals, vec![msg]);
         }
     })
 }
+
