@@ -27,26 +27,29 @@ export default {
       }
     },
     validateTargetPrincipal(){
-      
-      if (this.targetPrincipal === ""){
+      const cleanTargetPrincipal = this.targetPrincipal.trim()
+      if (cleanTargetPrincipal === ""){
         throw new Error("Principal not given")
       }
 
-      const targetPrincipal = Principal.fromText(this.targetPrincipal.trim())
+      const targetPrincipal = Principal.fromText(cleanTargetPrincipal)
       if (!targetPrincipal || targetPrincipal === Principal.anonymous()){
         throw new Error("Wrong target")
       }
       return targetPrincipal
     },
-    async dodajChat() {
+    getAuthClient(){
       this.isUserLogged()
-      const targetPrincipal = this.validateTargetPrincipal()
-
-      const backend = createActor(canisterId, {
+      return createActor(canisterId, {
         agentOptions: {
           identity: this.identity
         }
       })
+    },
+    async dodajChat() {
+      const targetPrincipal = this.validateTargetPrincipal()
+
+      const backend = this.getAuthClient()
 
       await backend.add_chat_msg(this.newChat, targetPrincipal)
       
